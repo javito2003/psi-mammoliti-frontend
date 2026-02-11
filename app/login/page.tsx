@@ -1,33 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { loginUser } from "@/lib/api";
+import { useAppDispatch, useAppSelector } from "@/lib/store/store";
+import { loginThunk, fetchMeThunk, clearError } from "@/lib/store/authSlice";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const dispatch = useAppDispatch();
+  const { error, status } = useAppSelector((state) => state.auth);
+
+  useEffect(() => {
+    return () => {
+      dispatch(clearError());
+    };
+  }, [dispatch]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError("");
-    setLoading(true);
 
     const form = new FormData(e.currentTarget);
     const email = form.get("email") as string;
     const password = form.get("password") as string;
 
-    try {
-      await loginUser({ email, password });
+    const result = await dispatch(loginThunk({ email, password }));
+    if (loginThunk.fulfilled.match(result)) {
+      await dispatch(fetchMeThunk());
       router.push("/");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
-    } finally {
-      setLoading(false);
     }
   }
+
+  const loading = status === "loading";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
@@ -69,7 +73,10 @@ export default function LoginPage() {
 
         <p className="mt-4 text-center text-sm text-zinc-500">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-medium text-zinc-900 hover:underline dark:text-zinc-100">
+          <Link
+            href="/register"
+            className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
+          >
             Register
           </Link>
         </p>

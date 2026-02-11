@@ -1,19 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { registerUser, loginUser } from "@/lib/api";
+import { useAppDispatch, useAppSelector } from "@/lib/store/store";
+import {
+  registerThunk,
+  loginThunk,
+  fetchMeThunk,
+  clearError,
+} from "@/lib/store/authSlice";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const dispatch = useAppDispatch();
+  const { error, status } = useAppSelector((state) => state.auth);
+
+  useEffect(() => {
+    return () => {
+      dispatch(clearError());
+    };
+  }, [dispatch]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError("");
-    setLoading(true);
 
     const form = new FormData(e.currentTarget);
     const firstName = form.get("firstName") as string;
@@ -21,16 +31,19 @@ export default function RegisterPage() {
     const email = form.get("email") as string;
     const password = form.get("password") as string;
 
-    try {
-      await registerUser({ firstName, lastName, email, password });
-      await loginUser({ email, password });
-      router.push("/");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
-    } finally {
-      setLoading(false);
-    }
+    const regResult = await dispatch(
+      registerThunk({ firstName, lastName, email, password }),
+    );
+    if (!registerThunk.fulfilled.match(regResult)) return;
+
+    const loginResult = await dispatch(loginThunk({ email, password }));
+    if (!loginThunk.fulfilled.match(loginResult)) return;
+
+    await dispatch(fetchMeThunk());
+    router.push("/");
   }
+
+  const loading = status === "loading";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
@@ -88,7 +101,10 @@ export default function RegisterPage() {
 
         <p className="mt-4 text-center text-sm text-zinc-500">
           Already have an account?{" "}
-          <Link href="/login" className="font-medium text-zinc-900 hover:underline dark:text-zinc-100">
+          <Link
+            href="/login"
+            className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
+          >
             Log in
           </Link>
         </p>

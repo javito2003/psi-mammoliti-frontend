@@ -38,3 +38,15 @@ export function loginUser(body: { email: string; password: string }) {
 export function logoutUser() {
   return request<{ message: string }>("/auth/logout", { method: "POST" });
 }
+
+export interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  createdAt: string;
+}
+
+export function getMe() {
+  return request<User>("/users/me", { method: "GET" });
+}
