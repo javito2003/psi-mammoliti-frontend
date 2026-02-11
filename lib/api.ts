@@ -50,3 +50,23 @@ export interface User {
 export function getMe() {
   return request<User>("/users/me", { method: "GET" });
 }
+
+export interface Theme {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface Professional {
+  id: string;
+  firstName: string;
+  lastName: string;
+  bio: string;
+  price: number;
+  timezone: string;
+  themes: Theme[];
+}
+
+export function getProfessionals() {
+  return request<Professional[]>("/professionals", { method: "GET" });
+}
