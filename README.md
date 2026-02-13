@@ -16,10 +16,6 @@ Aplicacion web para buscar profesionales de salud mental y agendar turnos. Const
 cp .env.example .env
 ```
 
-| Variable | Descripcion | Default |
-|----------|-------------|---------|
-| `NEXT_PUBLIC_API_URL` | URL base de la API backend | `http://localhost:3001` |
-
 ### 2. Instalar dependencias y correr
 
 ```bash
