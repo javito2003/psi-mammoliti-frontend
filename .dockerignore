@@ -1,0 +1,20 @@
+node_modules
+.next
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# Env
+.env
+.env.*
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Docs
+README.md
