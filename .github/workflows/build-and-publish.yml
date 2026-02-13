@@ -45,3 +45,10 @@ jobs:
         run: |
           docker push ${{ secrets.GCP_AR_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_AR_REPOSITORY }}/${{ secrets.GCP_AR_IMAGE }}:${{ github.sha }}
           docker push ${{ secrets.GCP_AR_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_AR_REPOSITORY }}/${{ secrets.GCP_AR_IMAGE }}:latest
+     
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ secrets.GCP_AR_IMAGE }} \
+            --image=${{ secrets.GCP_AR_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_AR_REPOSITORY }}/${{ secrets.GCP_AR_IMAGE }}:${{ github.sha }} \
+            --region=${{ secrets.GCP_AR_REGION }} \
+            --project=${{ secrets.GCP_PROJECT_ID }}
