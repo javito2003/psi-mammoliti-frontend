@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/store/store";
 import { Appointment, getMyAppointments } from "@/lib/api";
 
@@ -31,14 +31,28 @@ export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const fetchAppointments = useCallback(
+    (p: number) => {
+      if (!user) return;
+      setLoading(true);
+      getMyAppointments(p)
+        .then((res) => {
+          setAppointments(res.data);
+          setTotalPages(res.meta.totalPages);
+          setPage(res.meta.page);
+        })
+        .catch((err) => setError(err.message))
+        .finally(() => setLoading(false));
+    },
+    [user],
+  );
 
   useEffect(() => {
-    if (!user) return;
-    getMyAppointments()
-      .then(setAppointments)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [user]);
+    fetchAppointments(1);
+  }, [fetchAppointments]);
 
   if (authStatus === "loading" || authStatus === "idle" || loading) {
     return (
@@ -75,30 +89,55 @@ export default function AppointmentsPage() {
             You have no appointments yet.
           </p>
         ) : (
-          <div className="flex flex-col gap-4">
-            {appointments.map((appt) => (
-              <div
-                key={appt.id}
-                className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                      {appt.professionalFirstName} {appt.professionalLastName}
-                    </h2>
-                    <p className="mt-1 text-sm text-zinc-500">
-                      {formatDateTime(appt.startAt)}
-                    </p>
+          <>
+            <div className="flex flex-col gap-4">
+              {appointments.map((appt) => (
+                <div
+                  key={appt.id}
+                  className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                        {appt.professionalFirstName}{" "}
+                        {appt.professionalLastName}
+                      </h2>
+                      <p className="mt-1 text-sm text-zinc-500">
+                        {formatDateTime(appt.startAt)}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[appt.status] || "bg-zinc-100 text-zinc-800"}`}
+                    >
+                      {appt.status}
+                    </span>
                   </div>
-                  <span
-                    className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColors[appt.status] || "bg-zinc-100 text-zinc-800"}`}
-                  >
-                    {appt.status}
-                  </span>
                 </div>
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-center gap-4">
+                <button
+                  onClick={() => fetchAppointments(page - 1)}
+                  disabled={page <= 1}
+                  className="rounded-md border border-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-zinc-500">
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  onClick={() => fetchAppointments(page + 1)}
+                  disabled={page >= totalPages}
+                  className="rounded-md border border-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                >
+                  Next
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
     </div>

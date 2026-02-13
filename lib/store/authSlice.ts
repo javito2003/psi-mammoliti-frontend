@@ -92,7 +92,7 @@ const authSlice = createSlice({
     // logout
     builder.addCase(logoutThunk.fulfilled, (state) => {
       state.user = null;
-      state.status = "idle";
+      state.status = "succeeded";
     });
   },
 });

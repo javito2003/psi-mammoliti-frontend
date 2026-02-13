@@ -67,8 +67,22 @@ export interface Professional {
   themes: Theme[];
 }
 
-export function getProfessionals() {
-  return request<Professional[]>("/professionals", { method: "GET" });
+export function getThemes() {
+  return request<Theme[]>("/themes");
+}
+
+export function getProfessionals(
+  themeSlugs?: string[],
+  page = 1,
+  limit = 10,
+) {
+  const params = new URLSearchParams();
+  params.set("page", String(page));
+  params.set("limit", String(limit));
+  if (themeSlugs?.length) params.set("themes", themeSlugs.join(","));
+  return request<PaginatedResponse<Professional>>(
+    `/professionals?${params}`,
+  );
 }
 
 export function getAvailableSlots(
@@ -91,6 +105,16 @@ export function createAppointment(professionalId: string, startAt: string) {
   );
 }
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 export interface Appointment {
   id: string;
   professionalId: string;
@@ -102,6 +126,8 @@ export interface Appointment {
   createdAt: string;
 }
 
-export function getMyAppointments() {
-  return request<Appointment[]>("/appointments");
+export function getMyAppointments(page = 1, limit = 10) {
+  return request<PaginatedResponse<Appointment>>(
+    `/appointments?page=${page}&limit=${limit}`,
+  );
 }

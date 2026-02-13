@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { getProfessionals, Professional, Theme } from "@/lib/api";
+import { useCallback, useEffect, useState } from "react";
+import { getProfessionals, getThemes, Professional, Theme } from "@/lib/api";
 import ProfessionalModal from "@/components/ProfessionalModal";
 
 function getInitials(firstName: string, lastName: string) {
@@ -10,27 +10,50 @@ function getInitials(firstName: string, lastName: string) {
 
 export default function Home() {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [themes, setThemes] = useState<Theme[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTheme, setActiveTheme] = useState<string | null>(null);
+  const [activeThemes, setActiveThemes] = useState<Set<string>>(new Set());
   const [selectedPro, setSelectedPro] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    getProfessionals()
-      .then(setProfessionals)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+    getThemes()
+      .then(setThemes)
+      .catch(() => {});
   }, []);
 
-  const allThemes = useMemo(() => {
-    const map = new Map<string, Theme>();
-    professionals.forEach((p) => p.themes.forEach((t) => map.set(t.id, t)));
-    return Array.from(map.values());
-  }, [professionals]);
+  const fetchProfessionals = useCallback(
+    (slugs: Set<string>, p: number) => {
+      setLoading(true);
+      getProfessionals(
+        slugs.size > 0 ? Array.from(slugs) : undefined,
+        p,
+      )
+        .then((res) => {
+          setProfessionals(res.data);
+          setPage(res.meta.page);
+          setTotalPages(res.meta.totalPages);
+        })
+        .catch((err) => setError(err.message))
+        .finally(() => setLoading(false));
+    },
+    [],
+  );
 
-  const filtered = activeTheme
-    ? professionals.filter((p) => p.themes.some((t) => t.id === activeTheme))
-    : professionals;
+  useEffect(() => {
+    fetchProfessionals(activeThemes, 1);
+  }, [activeThemes, fetchProfessionals]);
+
+  const toggleTheme = (slug: string) => {
+    setActiveThemes((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  };
 
   if (loading) {
     return (
@@ -66,16 +89,14 @@ export default function Home() {
       {/* Content */}
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Theme filters */}
-        {allThemes.length > 0 && (
+        {themes.length > 0 && (
           <div className="mb-6 flex flex-wrap gap-2">
-            {allThemes.map((theme) => (
+            {themes.map((theme) => (
               <button
                 key={theme.id}
-                onClick={() =>
-                  setActiveTheme(activeTheme === theme.id ? null : theme.id)
-                }
+                onClick={() => toggleTheme(theme.slug)}
                 className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
-                  activeTheme === theme.id
+                  activeThemes.has(theme.slug)
                     ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
                     : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                 }`}
@@ -87,13 +108,14 @@ export default function Home() {
         )}
 
         {/* Cards */}
-        {filtered.length === 0 ? (
+        {professionals.length === 0 ? (
           <p className="py-12 text-center text-zinc-500">
             No professionals found.
           </p>
         ) : (
+          <>
           <div className="flex flex-col gap-4">
-            {filtered.map((pro) => (
+            {professionals.map((pro) => (
               <button
                 key={pro.id}
                 type="button"
@@ -150,6 +172,29 @@ export default function Home() {
               </button>
             ))}
           </div>
+
+            {totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-center gap-4">
+                <button
+                  onClick={() => fetchProfessionals(activeThemes, page - 1)}
+                  disabled={page <= 1}
+                  className="rounded-md border border-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-zinc-500">
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  onClick={() => fetchProfessionals(activeThemes, page + 1)}
+                  disabled={page >= totalPages}
+                  className="rounded-md border border-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
