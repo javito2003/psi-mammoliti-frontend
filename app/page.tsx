@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getProfessionals, Professional, Theme } from "@/lib/api";
+import ProfessionalModal from "@/components/ProfessionalModal";
 
 function getInitials(firstName: string, lastName: string) {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -23,9 +24,7 @@ export default function Home() {
 
   const allThemes = useMemo(() => {
     const map = new Map<string, Theme>();
-    professionals.forEach((p) =>
-      p.themes.forEach((t) => map.set(t.id, t)),
-    );
+    professionals.forEach((p) => p.themes.forEach((t) => map.set(t.id, t)));
     return Array.from(map.values());
   }, [professionals]);
 
@@ -98,14 +97,8 @@ export default function Home() {
               <button
                 key={pro.id}
                 type="button"
-                onClick={() =>
-                  setSelectedPro(selectedPro === pro.id ? null : pro.id)
-                }
-                className={`w-full rounded-lg border bg-white p-5 text-left shadow-sm transition-colors hover:border-zinc-300 dark:bg-zinc-900 dark:hover:border-zinc-600 ${
-                  selectedPro === pro.id
-                    ? "border-zinc-400 ring-1 ring-zinc-400 dark:border-zinc-500 dark:ring-zinc-500"
-                    : "border-zinc-200 dark:border-zinc-800"
-                }`}
+                onClick={() => setSelectedPro(pro.id)}
+                className="w-full rounded-lg border border-zinc-200 bg-white p-5 text-left shadow-sm transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-600"
               >
                 <div className="flex items-start gap-4">
                   {/* Avatar */}
@@ -125,9 +118,9 @@ export default function Home() {
                     </div>
 
                     {/* Location */}
-                    <p className="mt-0.5 text-sm text-zinc-500">
+                    {/* <p className="mt-0.5 text-sm text-zinc-500">
                       {pro.timezone}
-                    </p>
+                    </p> */}
 
                     {/* Bio */}
                     <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
@@ -159,6 +152,17 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {selectedPro &&
+        (() => {
+          const pro = professionals.find((p) => p.id === selectedPro);
+          return pro ? (
+            <ProfessionalModal
+              professional={pro}
+              onClose={() => setSelectedPro(null)}
+            />
+          ) : null;
+        })()}
     </div>
   );
 }

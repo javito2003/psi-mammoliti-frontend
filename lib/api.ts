@@ -70,3 +70,38 @@ export interface Professional {
 export function getProfessionals() {
   return request<Professional[]>("/professionals", { method: "GET" });
 }
+
+export function getAvailableSlots(
+  professionalId: string,
+  weekStart?: string,
+) {
+  const params = weekStart ? `?weekStart=${weekStart}` : "";
+  return request<{ slots: string[] }>(
+    `/professionals/${professionalId}/appointments/availability${params}`,
+  );
+}
+
+export function createAppointment(professionalId: string, startAt: string) {
+  return request<{ id: string }>(
+    `/professionals/${professionalId}/appointments`,
+    {
+      method: "POST",
+      body: JSON.stringify({ startAt }),
+    },
+  );
+}
+
+export interface Appointment {
+  id: string;
+  professionalId: string;
+  professionalFirstName: string;
+  professionalLastName: string;
+  startAt: string;
+  endAt: string;
+  status: string;
+  createdAt: string;
+}
+
+export function getMyAppointments() {
+  return request<Appointment[]>("/appointments");
+}
